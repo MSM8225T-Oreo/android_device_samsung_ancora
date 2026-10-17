@@ -1,0 +1,97 @@
+Restore reserved VectorImpl/SortedVectorImpl ABI slots (lineage-15.1)
+
+Target tree: system/core (LineageOS lineage-15.1).
+
+Why: the Samsung GB-era blobs of GT-I8150 (ancora) - libcamera.so is the
+only device-relevant importer - carry undefined references to the FBC
+reserved virtual slots that libutils removed again after KitKat:
+
+  _ZN7android10VectorImpl19reservedVectorImpl1..8E          (8x)
+  _ZN7android16SortedVectorImpl25reservedSortedVectorImpl1..8E (8x)
+
+Without these, camera.msm7x30.so fails to dlopen its blob chain with
+"cannot locate symbol reservedVectorImpl1".  This is the lineage-15.1
+rewrite of two cm-11-era patches kept for legacy-blob compatibility by
+tlaplayer/CM (Dave Burke 04e5e3b6 + Arne Coucheron 1ff78544) and AriesVE
+(frameworks/native commits 04e5e3b6/1ff78544 equivalents).
+
+Notes on the rewrite:
+  * The original pair was gated on NEEDS_VECTORIMPL_SYMBOLS (per-device
+    board flag through the legacy make build).  Oreo's libutils is a
+    soong module with no trivial per-device cflag hook, and the slots are
+    pure ABI padding (eight empty virtuals at the end of each class) -
+    so they are restored unconditionally.  Verified that the classes'
+    remaining virtual declaration order is identical to the blob-era
+    header, so appending the slots reproduces the blob-era vtables
+    exactly; the blobs import no VectorImpl vtable/typeinfo symbols.
+  * File locations moved for Oreo: include/utils -> libutils/include/utils,
+    libutils/ -> system/core/libutils/.
+
+Apply on the build box (mandatory for the Oreo port):
+    cd system/core && git apply --ignore-whitespace \
+        device/samsung/ancora/patches/system-core-15.1-vectorimpl-reserved.patch
+
+Post-build check (Stage 0 gate in BRINGUP.md):
+    nm -D out/target/product/ancora/system/lib/libutils.so | grep reservedVectorImpl
+    → must list reservedVectorImpl1..8 (and the SortedVectorImpl eight).
+
+--- a/libutils/include/utils/VectorImpl.h
++++ b/libutils/include/utils/VectorImpl.h
+@@ -106,4 +106,15 @@
+     virtual void            do_move_forward(void* dest, const void* from, size_t num) const = 0;
+     virtual void            do_move_backward(void* dest, const void* from, size_t num) const = 0;
+
++    // take care of FBC... (legacy blob ABI: Samsung libcamera.so imports
++    // these; restored for GT-I8150 (ancora) - see device/samsung/ancora)
++    virtual void            reservedVectorImpl1();
++    virtual void            reservedVectorImpl2();
++    virtual void            reservedVectorImpl3();
++    virtual void            reservedVectorImpl4();
++    virtual void            reservedVectorImpl5();
++    virtual void            reservedVectorImpl6();
++    virtual void            reservedVectorImpl7();
++    virtual void            reservedVectorImpl8();
++
+ private:
+@@ -157,3 +157,13 @@
+     virtual int             do_compare(const void* lhs, const void* rhs) const = 0;
+
++    // take care of FBC... (legacy blob ABI, see above)
++    virtual void            reservedSortedVectorImpl1();
++    virtual void            reservedSortedVectorImpl2();
++    virtual void            reservedSortedVectorImpl3();
++    virtual void            reservedSortedVectorImpl4();
++    virtual void            reservedSortedVectorImpl5();
++    virtual void            reservedSortedVectorImpl6();
++    virtual void            reservedSortedVectorImpl7();
++    virtual void            reservedSortedVectorImpl8();
++
+ private:
+--- a/libutils/VectorImpl.cpp
++++ b/libutils/VectorImpl.cpp
+@@ -557,3 +557,12 @@
+ }
+
++void VectorImpl::reservedVectorImpl1() { }
++void VectorImpl::reservedVectorImpl2() { }
++void VectorImpl::reservedVectorImpl3() { }
++void VectorImpl::reservedVectorImpl4() { }
++void VectorImpl::reservedVectorImpl5() { }
++void VectorImpl::reservedVectorImpl6() { }
++void VectorImpl::reservedVectorImpl7() { }
++void VectorImpl::reservedVectorImpl8() { }
++
+ /*****************************************************************************/
+@@ -676,3 +676,12 @@
+ }
+
++void SortedVectorImpl::reservedSortedVectorImpl1() { }
++void SortedVectorImpl::reservedSortedVectorImpl2() { }
++void SortedVectorImpl::reservedSortedVectorImpl3() { }
++void SortedVectorImpl::reservedSortedVectorImpl4() { }
++void SortedVectorImpl::reservedSortedVectorImpl5() { }
++void SortedVectorImpl::reservedSortedVectorImpl6() { }
++void SortedVectorImpl::reservedSortedVectorImpl7() { }
++void SortedVectorImpl::reservedSortedVectorImpl8() { }
++
+ /*****************************************************************************/

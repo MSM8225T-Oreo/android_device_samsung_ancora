@@ -27,6 +27,13 @@ All "expect" blocks are things to verify on the device, not on the build box.
       wiring); requires
       `patches/frameworks-av-15.1-camera-params-extra.patch` applied to the
       frameworks/av tree first
+- [ ] The mandatory frameworks/av + system/core patches are applied to the
+      Lineage 15.1 tree (from the build root run
+      `device/samsung/ancora/apply-patches.sh` — it skips already-applied
+      hunks); then verify the restored ABI slots are exported:
+      `nm -D out/target/product/ancora/system/lib/libutils.so | grep reservedVectorImpl`
+      (needs `reservedVectorImpl1..8` + the SortedVectorImpl eight — without
+      them libcamera.so's fused blob chain cannot even dlopen)
 - [ ] Blob copy stage: `device-vendor-blobs.mk` paths all resolve
       (incl. `sensors.default.so` alias; `rild`/`libril.so` excluded)
 
@@ -106,10 +113,13 @@ adb shell getprop | grep -E "ro.controller|ctl.start|init.svc"
    - [ ] Still capture produces a valid JPEG — placeholder EXIF-free output
          is expected (zero-length EXIF by design, see Phase-5 note below)
    - Fail modes: HAL dlopen failure → frameworks/av patch applied? Board
-         `TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY` set?; symbol failures
-         mentioning `MediaPlayer`/`MemoryHeapPmem`/`JpegEncoder` → blob
-         loaded out of the HAL chain (shim only covers the local group);
-         failures in Samsung parameter strings check the Extra header copy
+         `TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY` set? symbol failures
+         mentioning `reservedVectorImpl` → system/core VectorImpl patch
+         missing; linker kill/SIGSEGV *while mapping* `libcamera.so` →
+         apply the OPTIONAL `patches/bionic-15.1-prelink-optional.patch`
+         (blobs carry PRE trailers but normalized headers, so this is the
+         last-resort path); failures in Samsung parameter strings check the
+         Extra header copy
 
 7. **ril**
    - [ ] `rild.libpath=/system/lib/libsecril_shim.so` loads; blob
@@ -213,3 +223,30 @@ adb shell getprop | grep -E "ro.controller|ctl.start|init.svc"
   - Samsung `exif_attribute_t` layout is unsourcable → photos carry no EXIF
     metadata at bring-up by design; makeExif writes `*totalLen = 0` and the
     blob skips the APP1 block (cannot corrupt the still).
+- **legacy-commit equivalents audited (7 supplied refs — decision table)**:
+  - `NEEDS_VECTORIMPL_SYMBOLS` (cm system_core 04e5e3b6 + 1ff7854): REQUIRED,
+    rewritten for the Oreo tree as
+    `patches/system-core-15.1-vectorimpl-reserved.patch` — unconditionally
+    (no board gate): `libcamera.so` imports all 16 reserved slots but no
+    VectorImpl vtable/typeinfo symbols, and the classes' remaining virtual
+    declaration order matches the blob-era header, so appended slots at the
+    same positions reproduce the old vtables exactly.
+  - `bionic: Add prelink support` (sirmordred b1e089a): OPTIONAL, rewritten
+    as `patches/bionic-15.1-prelink-optional.patch` — libcamera.so /
+    liboemcamera.so carry `PRE ` trailers but both have normalized program
+    headers (first PT_LOAD at p_vaddr 0x0), so apply only if the blob chain
+    fails to map at Stage 2. (The prelinked `libril.so` blob is NOT shipped.)
+  - telephony `getDataTechnology` (CM 8dd84c2): NOT applicable — the fix is
+    about pre-v5 `getRilVersion()` framework plumbing; in the Oreo port the
+    legacy seam lives entirely in the AOSP libril/rild structure translation
+    before the blob's function table (libsecril_shim).
+  - `BINDER_COMPAT` MemoryHeapBase getOffset removal (AriesVE 10c3798): NOT
+    needed — consistent O libbinder on both binder ends in our port; the
+    blobs import only the MemoryHeapBase ctors + getDevice (no getOffset),
+    and a GB-era reader of a 3-int reply against O's 4-int (fd,size,flags,
+    offset) writer stays compatible (extra tail field is simply unread).
+  - linker "fix pie" (-Werror removal, sooti 0ac7b51): NOT needed — modern
+    tree builds the linker fine.
+  - linker "load shim libs first" (crpalmer 02b1d48): NOT needed — it
+    orders LD_SHIM_LIBS entries inside walk_dependencies_tree, and this
+    port removed LD_SHIM_LIBS entirely (no blob-local shims are attached).

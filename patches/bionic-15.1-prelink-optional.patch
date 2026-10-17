@@ -1,0 +1,91 @@
+Legacy prelink support for Samsung blobs, rewritten for Oreo linker (OPTIONAL)
+
+Target tree: bionic (LineageOS lineage-15.1).
+
+Why: libcamera.so and liboemcamera.so of GT-I8150 (ancora) carry a trailing
+"PRE " prelink info trailer (the old Samsung prelinked-library format; same
+patch family as the cm-13-era "bionic: Add prelink support", sirmordred
+b1e089a, rewritten for the Oreo ElfReader API).
+
+BUT: static inspection of both blobs shows ordinary program headers
+(first PT_LOAD at p_vaddr 0x0, normal segment layout), i.e. they were
+re-targeted after the prelink pass, so the Oreo linker's regular
+load_bias arithmetic most likely handles them out of the box.
+
+=> DO NOT APPLY by default. Apply only if Stage 2 camera bring-up shows
+   the blob chain failing to load (linker kill / SIGSEGV while mapping
+   libcamera.so / symbol-corrupt relocations), then rebuild:
+    cd bionic && git apply --ignore-whitespace \
+        device/samsung/ancora/patches/bionic-15.1-prelink-optional.patch
+
+Semantics, unchanged from the cm patch: a library whose file ends in a
+'PRE ' trailer must be mmapped at the recorded base with MAP_FIXED;
+every other library returns nullptr from the check and takes the normal
+ReserveAligned() path.  Differences from the cm version: no required_base_
+ElfReader member is added (everything is local to ReserveAddressSpace),
+the "not a prelinked library" case is silent instead of DL_ERR-ing for
+every normal load, and a MAP_FAILED is reported instead of falling
+through to the (then unrelated) nullptr checks below.
+
+--- a/linker/linker_phdr.cpp
++++ b/linker/linker_phdr.cpp
+@@ -546,6 +546,32 @@
+     return start;
+ }
+
++// Samsung-era prelink support for GT-I8150 (ancora) blobs, rewritten from
++// the cm-13-era "bionic: Add prelink support" patch for the Oreo linker.
++// A library with a trailing PRE info trailer must be mapped at the base
++// recorded in that trailer; every normal library returns nullptr here and
++// falls through to the regular ReserveAligned() path below.
++typedef struct {
++    long mmap_addr;
++    char tag[4]; /* 'P', 'R', 'E', ' ' */
++} prelink_info_t;
++
++static void* is_prelinked(int fd, const char* name)
++{
++    prelink_info_t info;
++    if (lseek(fd, -static_cast<off_t>(sizeof(info)), SEEK_END) < 0) {
++        return nullptr;
++    }
++    if (TEMP_FAILURE_RETRY(read(fd, &info, sizeof(info))) !=
++            static_cast<ssize_t>(sizeof(info))) {
++        return nullptr;
++    }
++    if (memcmp(info.tag, "PRE ", 4)) {
++        return nullptr;
++    }
++    return reinterpret_cast<void*>(info.mmap_addr);
++}
++
+ // Reserve a virtual address range big enough to hold all loadable
+ // segments of a program header table. This is done by creating a
+ // private anonymous mmap() with PROT_NONE.
+@@ -565,6 +591,9 @@
+   // Assume position independent executable by default.
+   void* mmap_hint = nullptr;
+
++  // Legacy Samsung prelink support (see is_prelinked above): non-prelinked
++  // libraries return nullptr here and use the regular, alignment-slack path.
++  void* required_base = is_prelinked(fd_, name_.c_str());
+
+   if (extinfo != nullptr) {
+     if (extinfo->flags & ANDROID_DLEXT_RESERVED_ADDRESS) {
+@@ -589,5 +618,16 @@
+     }
+-    start = ReserveAligned(mmap_hint, load_size_, kLibraryAlignment);
++    if (required_base != nullptr) {
++      // Prelinked blob: map at the declared base, no alignment slack.
++      start = mmap(required_base, load_size_, PROT_NONE,
++                   MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++      if (start == reinterpret_cast<void*>(-1)) {
++        DL_ERR("couldn't map %zd bytes at prelink base %p for \"%s\"",
++               load_size_, required_base, name_.c_str());
++        return false;
++      }
++    } else {
++      start = ReserveAligned(mmap_hint, load_size_, kLibraryAlignment);
++    }
+     if (start == nullptr) {
+       DL_ERR("couldn't reserve %zd bytes of address space for \"%s\"", load_size_, name_.c_str());
