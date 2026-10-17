@@ -63,7 +63,7 @@ TARGET_KERNEL_SOURCE := kernel/samsung/msm7x30-common
 TARGET_KERNEL_CONFIG := ancora_defconfig
 
 # Build kernel with GCC 4.9
-TARGET_KERNEL_CROSS_COMPILE_PREFIX := arm-linux-androideabi-
+TARGET_KERNEL_CROSS_COMPILE_PREFIX := arm-eabi-
 
 MALLOC_SVELTE := true
 
