@@ -1,3 +1,5 @@
-type sensors_socket, file_type;
-type camera_socket, file_type;
+# Device-specific file types for ancora (Oreo / Lineage 15.1 policy)
+
+# Tunable sysfs nodes exposed to services and platform apps
+# (accelerometer calibration, fast charge, sec switch, YDA165 amp).
 type sysfs_custom, fs_type, sysfs_type;

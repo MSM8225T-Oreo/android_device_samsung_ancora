@@ -1,7 +1,10 @@
-# Adding allow rule for search on /fuse
-allow init fuse:dir search;
-allow init self:capability sys_module;
-allow init fuse:dir mounton;
+# init (still runs the Samsung/legacy sections of init.qcom.rc; Oreo / 15.1 policy)
 
-allow init mmc_block_device:blk_file { setattr };
-allow init wpa_socket:unix_dgram_socket { bind create };
+# init adjusts partition attributes (chmod on /dev/block/mmcblk0p1X)
+allow init mmc_block_device:blk_file { open setattr };
+
+# init copies /data/dump_enable into /proc/dump_enable (silent reset toggle)
+allow init proc:file write;
+
+# device sysfs nodes chown'd/chmod'd by init.qcom.rc
+allow init sysfs:dir_file_class_set setattr;

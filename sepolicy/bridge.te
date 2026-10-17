@@ -1,14 +1,15 @@
-# Bridge Manager (radio process)
+# radish - Samsung bridge manager ("radio process watchdog") spawned by rild
 type bridge, domain;
 type bridge_exec, exec_type, file_type;
 
-# Started by init
+# Either started by init or exec'd from rild (see rild.te)
 init_daemon_domain(bridge)
 
-allow bridge self:netlink_kobject_uevent_socket { create bind read };
+# Watch kobject uevents for the SMD channels
+allow bridge self:netlink_kobject_uevent_socket create_socket_perms;
 
-# Allow logging diagnostic items
+# Diag/efs logging items
 allow bridge diagnostic_device:chr_file rw_file_perms;
 
-# XXX Label sysfs files with a specific type?
-allow bridge sysfs:file { open write read getattr };
+# Talks back to the rild daemon it came from
+binder_call(bridge, rild)

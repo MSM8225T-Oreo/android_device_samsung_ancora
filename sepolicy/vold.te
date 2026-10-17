@@ -1,2 +1,7 @@
-allow vold kernel:system module_request;
+# vold on msm7x30 (Oreo / 15.1 policy)
+
+# FDE (encryptable=footer) lives on the userdata device
 allow vold mmc_block_device:blk_file { open read write ioctl getattr };
+
+# vold loads kernel modules for crypto support on first mount
+allow vold kernel:system module_request;

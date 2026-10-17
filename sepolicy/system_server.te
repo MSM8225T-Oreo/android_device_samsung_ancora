@@ -1,6 +1,17 @@
+# system_server device specifics (Oreo / 15.1 policy)
+
+# Modem state visible to telephony (Samsung RIL leftovers)
 allow system_server radio_device:chr_file rw_file_perms;
-allow system_server radio_device:dir { getattr search };
+allow system_server radio_device:dir r_dir_perms;
+
+# Device tunables and sensor calibration nodes
 allow system_server sysfs_custom:dir search;
 allow system_server sysfs_custom:file rw_file_perms;
 allow system_server sysfs_custom:lnk_file read;
+
+# uinput devices (touchscreen firmware paths)
 allow system_server uhid_device:chr_file { open read write ioctl };
+
+# SensorService may load the legacy sensors HAL (sensors.ancora.so)
+# directly in-process on this non-HIDL build.
+allow system_server sensors_device:chr_file rw_file_perms;

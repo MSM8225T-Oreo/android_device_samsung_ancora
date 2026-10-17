@@ -1,8 +1,21 @@
+# Device node types for ancora (Oreo / Lineage 15.1 policy)
+
+# Modem/diag
 type diagnostic_device, dev_type;
-type shared_log_device, dev_type;
+
+# /dev/cpu_dma_latency
 type power_control_device, dev_type;
+
+# EFS / Samsung modem partitions
 type efs_block_device, dev_type;
+
+# Bluetooth (BCM4329)
 type bluetooth_device, dev_type;
-type shared_memory_device, dev_type;
 type rfkill_device, dev_type;
+
+# /dev/smd.* (shared memory channels not claimed by ril/bt rules)
+type shared_memory_device, dev_type;
+type shared_log_device, dev_type;
+
+# Catch-all for all other mmc block devices
 type mmc_block_device, dev_type;

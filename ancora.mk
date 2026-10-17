@@ -49,9 +49,10 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/media/media_codecs_performance.xml:system/etc/media_codecs_performance.xml \
     $(LOCAL_PATH)/media/media_profiles.xml:system/etc/media_profiles.xml
 
-# Audio configuration
+# Audio configuration (Oreo XML policy, replaces audio_policy.conf)
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/audio_policy.conf:system/etc/audio_policy.conf
+    $(LOCAL_PATH)/configs/audio_policy_configuration.xml:system/etc/audio_policy_configuration.xml \
+    external/wpa_supplicant_8/wpa_supplicant/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf
 
 # Ramdisk
 PRODUCT_COPY_FILES += \
@@ -84,6 +85,37 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/gps/etc/gps.conf:system/etc/gps.conf
 
+# Oreo HIDL HAL stack:
+# wrappers for the legacy msm7x30 hw modules (gralloc/hwc/audio/omx/gps/...)
+PRODUCT_PACKAGES += \
+    android.hardware.audio@2.0-impl \
+    android.hardware.audio@2.0-service \
+    android.hardware.audio.effect@2.0-impl \
+    android.hardware.camera.provider@2.4-impl \
+    android.hardware.camera.provider@2.4-service \
+    camera.device@1.0-impl \
+    android.hardware.gnss@1.0-impl \
+    android.hardware.gnss@1.0-service \
+    android.hardware.graphics.allocator@2.0-impl \
+    android.hardware.graphics.allocator@2.0-service \
+    android.hardware.graphics.composer@2.1-impl \
+    android.hardware.graphics.composer@2.1-service \
+    android.hardware.graphics.mapper@2.0-impl \
+    android.hardware.light@2.0-impl \
+    android.hardware.light@2.0-service \
+    android.hardware.media.omx@1.0-service \
+    android.hardware.memtrack@1.0-impl \
+    android.hardware.memtrack@1.0-service \
+    android.hardware.power@1.0-impl \
+    android.hardware.power@1.0-service \
+    android.hardware.sensors@1.0-impl \
+    android.hardware.sensors@1.0-service \
+    android.hardware.usb@1.0-service \
+    android.hardware.vibrator@1.0-impl \
+    android.hardware.wifi@1.0-service
+
+# Legacy device HAL modules (rebuilt from cm-13.0 trees, loaded by the
+# HIDL wrappers above through hw_get_module)
 PRODUCT_PACKAGES += \
     camera.msm7x30 \
     copybit.msm7x30 \
@@ -101,6 +133,7 @@ PRODUCT_PACKAGES += \
     libgenlock \
     libstlport
 
+# Media / OMX
 PRODUCT_PACKAGES += \
     libmm-omxcore \
     libOmxCore \
@@ -109,6 +142,20 @@ PRODUCT_PACKAGES += \
     libstagefrighthw \
     libc2dcolorconvert
 
+# RIL: AOSP rild speaks HIDL (radio@1.0); the shim bridges Samsung blobs.
+# libsec-ril.so additionally DT_NEEDEDs the listed legacy system libs; none
+# of them is packaged by the base products, so name them explicitly here.
+PRODUCT_PACKAGES += \
+    rild \
+    libril \
+    librilutils \
+    libsecril_shim \
+    libhardware_legacy \
+    libnetutils \
+    libsqlite \
+    libcrypto
+
+# Filesystem tools
 PRODUCT_PACKAGES += \
     badblocks \
     mke2fs.conf \
@@ -119,19 +166,35 @@ PRODUCT_PACKAGES += \
     libexifa \
     libjpega
 
-# Device-specific packages
+# Camera app (Snap/Gello are CM-13 era and do not exist in 15.1)
 PRODUCT_PACKAGES += \
-    Snap \
-    Gello
+    Camera2
+
+PRODUCT_PACKAGES_REMOVE += \
+    Calculator \
+    Calendar \
+    DeskClock \
+    Email \
+    Gallery2 \
+    Jelly \
+    SoundRecorder \
+    Terminal \
+    WallpaperPicker
 
 # AncoraParts
 PRODUCT_PACKAGES += \
-    AncoraParts \
+    AncoraParts
 
-# Libshims
+# libshims: libstdc++ (operator new/delete) and libstlport (std::__node_alloc)
+# satisfy the DT_NEEDED of the Adreno GPU blobs (libsc-a2xx, libq3dtools);
+# the Samsung camera chain blobs DT_NEEDED libstdc++ too.  libjpeg is a stub
+# for a vestigial libseccameraadaptor DT_NEEDED.  libshim_media wraps Oreo
+# media ABI drifts and re-adds MemoryHeapPmem/JpegEncoder for the camera
+# blobs (DT_NEEDED of camera.msm7x30).
 PRODUCT_PACKAGES += \
-    libshim_native \
-    libshim_ril
+    libshim_media \
+    libjpeg \
+    libstdc++
 
 # IPv6 tethering
 PRODUCT_PACKAGES += \
@@ -150,12 +213,20 @@ PRODUCT_PACKAGES += \
     wpa_supplicant \
     wpa_supplicant.conf
 
-# For userdebug builds
-ADDITIONAL_DEFAULT_PROPERTIES += \
-    ro.secure=0 \
-    ro.adb.secure=0 \
-    ro.debuggable=1 \
-    persist.service.adb.enable=1
+# Bluetooth: the AOSP Fluoride stack (bluetooth.default, auto-loaded by the
+# Bluetooth app via hw_get_module) plus the Oreo HIDL HAL service whose
+# vendor_interface dlopens libbt-vendor (BCM4329 UART + bluesleep LPM).
+# Neither the AOSP full_base_telephony chain nor vendor_lineage packages the
+# Bluetooth app, so it must be named explicitly here.
+PRODUCT_PACKAGES += \
+    Bluetooth \
+    bluetooth.default \
+    android.hardware.bluetooth@1.0-impl \
+    android.hardware.bluetooth@1.0-service \
+    libbt-vendor
+
+# Shipping Android version for legacy-vold/FDE behaviours
+PRODUCT_SHIPPING_API_LEVEL := 16
 
 $(call inherit-product-if-exists, vendor/samsung/ancora/device-vendor.mk)
 $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)

@@ -1,31 +1,29 @@
-# remote storage process (runs as nobody)
+# rmt_storage - Samsung remote storage demuxer (runs as nobody)
 type rmt, domain;
 type rmt_exec, exec_type, file_type;
 
 # Started by init
 init_daemon_domain(rmt)
 
-# Drop (user, group) to (nobody, nobody)
+# Drops privileges to (nobody, nobody)
 allow rmt self:capability { setuid setgid };
 
-# opens and reads /dev/block/mmcblk0
-allow rmt root_block_device:blk_file r_file_perms;
-allow rmt root_block_device:dir r_dir_perms;
+# Reads/writes the modem partitions (EFS mirroring over Samsung protocol)
+allow rmt efs_block_device:blk_file rw_file_perms;
+allow rmt mmc_block_device:blk_file rw_file_perms;
 
-# Allow shared memory logging access
+# Shared memory logging channels used by blob daemons
+allow rmt shared_memory_device:chr_file rw_file_perms;
 allow rmt shared_log_device:chr_file rw_file_perms;
 
+# Creates its own local sockets and drops logs into cgroup nodes
 allow rmt self:socket create_socket_perms;
 allow rmt cgroup:dir { create add_name };
 
-# Wake lock access
+# Suspend blocking while holding the modem open
 wakelock_use(rmt)
 
-# Access property service to set ctl.rmt_storage
-unix_socket_connect(rmt, property, init)
-allow rmt ctl_rmt_prop:property_service set;
+# Asks init to stop/restart remote storage on modem crash: "ctl.rmt"?
+set_prop(rmt, ctl_rmt_prop)
 
-unconfined_domain(rmt)
 dontaudit rmt kmem_device:chr_file rw_file_perms;
-
-allow rmt mmc_block_device:blk_file rw_file_perms;

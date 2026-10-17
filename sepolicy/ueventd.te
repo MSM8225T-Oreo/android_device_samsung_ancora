@@ -1,3 +1,8 @@
-allow ueventd { wifi_data_file }:file r_file_perms;
-allow ueventd { wifi_data_file }:dir search;
+# ueventd labels device nodes per file_contexts
+
+# wifi firmware/nvram nodes
+allow ueventd wifi_data_file:dir search;
+allow ueventd wifi_data_file:file r_file_perms;
+
+# device tunables (need setattr + write to fix up ownership bits)
 allow ueventd sysfs_custom:file rw_file_perms;

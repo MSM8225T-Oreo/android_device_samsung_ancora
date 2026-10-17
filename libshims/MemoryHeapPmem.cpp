@@ -30,7 +30,7 @@
 #include "MemoryHeapPmem.h"
 #include <binder/MemoryHeapBase.h>
 
-#ifdef HAVE_ANDROID_OS
+#ifdef __ANDROID__
 #include <linux/android_pmem.h>
 #endif
 
@@ -72,7 +72,7 @@ SubRegionMemory::SubRegionMemory(const sp<MemoryHeapPmem>& heap,
     memset(start_ptr, 0xda, size);
 #endif
 
-#ifdef HAVE_ANDROID_OS
+#ifdef __ANDROID__
     if (size > 0) {
         const size_t pagesize = getpagesize();
         size = (size + pagesize-1) & ~(pagesize-1);
@@ -109,7 +109,7 @@ void SubRegionMemory::revoke()
     // which means MemoryHeapPmem::revoke() wouldn't have been able to 
     // promote() it.
     
-#ifdef HAVE_ANDROID_OS
+#ifdef __ANDROID__
     if (mSize != 0) {
         const sp<MemoryHeapPmem>& heap(getHeap());
         int our_fd = heap->heapID();
@@ -132,7 +132,7 @@ MemoryHeapPmem::MemoryHeapPmem(const sp<MemoryHeapBase>& pmemHeap,
     : MemoryHeapBase()
 {
     char const * const device = pmemHeap->getDevice();
-#ifdef HAVE_ANDROID_OS
+#ifdef __ANDROID__
     if (device) {
         int fd = open(device, O_RDWR | (flags & NO_CACHING ? O_SYNC : 0));
         ALOGE_IF(fd<0, "couldn't open %s (%s)", device, strerror(errno));
@@ -189,7 +189,7 @@ sp<MemoryHeapPmem::MemoryPmem> MemoryHeapPmem::createMemory(
 
 status_t MemoryHeapPmem::slap()
 {
-#ifdef HAVE_ANDROID_OS
+#ifdef __ANDROID__
     size_t size = getSize();
     const size_t pagesize = getpagesize();
     size = (size + pagesize-1) & ~(pagesize-1);
@@ -207,7 +207,7 @@ status_t MemoryHeapPmem::slap()
 
 status_t MemoryHeapPmem::unslap()
 {
-#ifdef HAVE_ANDROID_OS
+#ifdef __ANDROID__
     size_t size = getSize();
     const size_t pagesize = getpagesize();
     size = (size + pagesize-1) & ~(pagesize-1);

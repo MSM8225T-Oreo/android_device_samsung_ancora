@@ -1,6 +1,7 @@
+# surfaceflinger on legacy msm7x30 LCD (Oreo / 15.1 policy)
+
+# Framebuffer/vsync sysfs knobs
 allow surfaceflinger sysfs:file rw_file_perms;
 
-# Read from /data/local/tmp
-allow surfaceflinger shell_data_file:dir search;
-allow surfaceflinger shell_data_file:file { open getattr read };
-allow surfaceflinger shell_data_file:lnk_file read;
+# Layer dumps via the qdutils-style interfaces
+allow surfaceflinger gpu_device:chr_file rw_file_perms;

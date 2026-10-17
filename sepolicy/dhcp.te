@@ -1,1 +1,4 @@
-allow dhcp self:rawip_socket { create write setopt };
+# dhcpcd per-interface instances (wlan0 / bt-pan / eth0)
+# (type dhcp / dhcp_exec come from platform policy)
+
+allow dhcp self:rawip_socket { create write setopt read };

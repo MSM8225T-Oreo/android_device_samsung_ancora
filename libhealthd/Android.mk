@@ -18,6 +18,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := healthd_board_default.cpp
 LOCAL_MODULE := libhealthd.msm
-LOCAL_C_INCLUDES := system/core/healthd bootable/recovery
+LOCAL_MODULE_TAGS := optional
+# Oreo: minui headers moved to bootable/recovery/minui/include
+LOCAL_C_INCLUDES := system/core/healthd bootable/recovery/minui/include
 include $(BUILD_STATIC_LIBRARY)
-

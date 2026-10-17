@@ -1,0 +1,90 @@
+<!--
+  Samsung Galaxy W (GT-I8150) audio policy configuration.
+
+  Ported from the cm-13.0 audio_policy.conf (1:1 mapping of outputs/inputs)
+  into the XML schema consulted by Oreo's AudioPolicyManager (USE_XML_
+  AUDIO_POLICY_CONF). No routing matrix is required: the legacy
+  audio.primary.msm7x30 HAL handles device switching internally.
+-->
+<audioPolicyConfiguration version="1.0" xmlns="http://schemas.android.com/audio/audio_policy_configuration.xsd">
+    <globalConfiguration speaker_drc_enabled="false" />
+
+    <modules>
+        <!-- Primary audio HAL: audio.primary.msm7x30.so -->
+        <module name="primary" halVersion="2.0">
+            <attachedDevices>
+                <item>Speaker</item>
+                <item>Earpiece</item>
+                <item>Built-In Mic</item>
+                <item>Voice Call</item>
+            </attachedDevices>
+            <defaultOutputDevice>Speaker</defaultOutputDevice>
+            <mixPorts>
+                <mixPort name="primary output" role="source" flags="AUDIO_OUTPUT_FLAG_PRIMARY">
+                    <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
+                             samplingRates="44100,48000"
+                             channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
+                </mixPort>
+                <mixPort name="primary input" role="sink">
+                    <profile name="" format="AUDIO_FORMAT_PCM_16_BIT,AUDIO_FORMAT_AMR_NB"
+                             samplingRates="8000,11025,12000,16000,22050,24000,32000,44100,48000"
+                             channelMasks="AUDIO_CHANNEL_IN_MONO,AUDIO_CHANNEL_IN_STEREO,AUDIO_CHANNEL_IN_VOICE_CALL_MONO,AUDIO_CHANNEL_IN_VOICE_DNLINK_MONO,AUDIO_CHANNEL_IN_VOICE_UPLINK_MONO"/>
+                </mixPort>
+            </mixPorts>
+            <devicePorts>
+                <outputPort tagName="Earpiece" type="AUDIO_DEVICE_OUT_EARPIECE" role="sink"/>
+                <outputPort tagName="Speaker" type="AUDIO_DEVICE_OUT_SPEAKER" role="sink"/>
+                <outputPort tagName="Wired Headset" type="AUDIO_DEVICE_OUT_WIRED_HEADSET" role="sink"/>
+                <outputPort tagName="Wired Headphone" type="AUDIO_DEVICE_OUT_WIRED_HEADPHONE" role="sink"/>
+                <outputPort tagName="BT SCO Headset" type="AUDIO_DEVICE_OUT_ALL_SCO" role="sink"/>
+                <inputPort tagName="Built-In Mic" type="AUDIO_DEVICE_IN_BUILTIN_MIC" role="source"/>
+                <inputPort tagName="Wired Headset Mic" type="AUDIO_DEVICE_IN_WIRED_HEADSET" role="source"/>
+                <inputPort tagName="BT SCO Headset Mic" type="AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET" role="source"/>
+                <inputPort tagName="Voice Call" type="AUDIO_DEVICE_IN_VOICE_CALL" role="source"/>
+                <inputPort tagName="Communication" type="AUDIO_DEVICE_IN_COMMUNICATION" role="source"/>
+            </devicePorts>
+            <routes>
+                <route type="mix" sink="Earpiece" sources="primary output"/>
+                <route type="mix" sink="Speaker" sources="primary output"/>
+                <route type="mix" sink="Wired Headset" sources="primary output"/>
+                <route type="mix" sink="Wired Headphone" sources="primary output"/>
+                <route type="mix" sink="BT SCO Headset" sources="primary output"/>
+                <route type="mix" sink="primary input" sources="Built-In Mic,Wired Headset Mic,BT SCO Headset Mic,Voice Call,Communication"/>
+            </routes>
+        </module>
+
+        <!-- A2DP: audio.a2dp.default -->
+        <module name="a2dp">
+            <mixPorts>
+                <mixPort name="a2dp output" role="source">
+                    <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
+                             samplingRates="44100,48000"
+                             channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
+                </mixPort>
+            </mixPorts>
+            <devicePorts>
+                <outputPort tagName="A2DP Out" type="AUDIO_DEVICE_OUT_ALL_A2DP" role="sink"/>
+            </devicePorts>
+            <routes>
+                <route type="mix" sink="A2DP Out" sources="a2dp output"/>
+            </routes>
+        </module>
+
+        <!-- USB accessory: audio.usb.default -->
+        <module name="usb">
+            <mixPorts>
+                <mixPort name="usb_accessory output" role="source">
+                    <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
+                             samplingRates="44100"
+                             channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
+                </mixPort>
+            </mixPorts>
+            <devicePorts>
+                <outputPort tagName="USB Accessory Out" type="AUDIO_DEVICE_OUT_USB_ACCESSORY" role="sink"/>
+            </devicePorts>
+            <routes>
+                <route type="mix" sink="USB Accessory Out" sources="usb_accessory output"/>
+            </routes>
+        </module>
+    </modules>
+</audioPolicyConfiguration>

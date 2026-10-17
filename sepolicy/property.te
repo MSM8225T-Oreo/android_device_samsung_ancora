@@ -1,1 +1,4 @@
+# Property types for ancora (Oreo / Lineage 15.1 policy)
+
+# ctl.rmt / ctl.stop used by rmt_storage to ask for remote storage service
 type ctl_rmt_prop, property_type;

@@ -23,7 +23,7 @@
 #include <binder/MemoryHeapBase.h>
 #include <binder/IMemory.h>
 #include <utils/SortedVector.h>
-#include <utils/threads.h>
+#include <utils/Mutex.h>
 
 namespace android {
 

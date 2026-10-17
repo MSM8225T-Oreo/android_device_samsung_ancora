@@ -1,10 +1,20 @@
-allow wpa init:unix_dgram_socket { read write };
+# wpa_supplicant (nl80211 + BCM4329). Not an AOSP domain in 8.0; the legacy
+# standalone daemon started from init.qcom.rc keeps its own device domain.
+type wpa, domain;
+type wpa_exec, exec_type, file_type;
 
-# logwrapper used with wpa_supplicant
-allow wpa devpts:chr_file { read write };
+# Started by init (see the wpa_supplicant service in init.qcom.rc)
+init_daemon_domain(wpa)
 
-allow wpa wpa_socket:unix_dgram_socket { read write };
-allow wpa_socket system_server:unix_dgram_socket sendto;
+# netlink to the bcmdhd driver
+allow wpa self:capability { net_admin net_raw };
+allow wpa self:netlink_socket create_socket_perms;
+allow wpa self:netlink_route_socket { bind create nlmsg_read nlmsg_write };
 
-allow wpa_socket wifi_data_file:sock_file unlink;
-allow wpa rfkill_device:chr_file { read open };
+# daemon runs as the wifi user but needs to manage rfkill for LPM
+allow wpa rfkill_device:chr_file { open read };
+
+# control socket plumbing + /data/misc/wifi state
+allow wpa wifi_data_file:dir create_dir_perms;
+allow wpa wifi_data_file:file create_file_perms;
+type_transition wpa wifi_data_file:dir wpa_socket "sockets";

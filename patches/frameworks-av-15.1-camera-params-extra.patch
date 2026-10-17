@@ -1,0 +1,40 @@
+Restore CAMERA_PARAMETERS_EXTRA_{C,H} hooks in frameworks/av (lineage-15.1)
+
+Target tree: frameworks/av (LineageOS lineage-15.1).
+
+Why: the Samsung blob chain of GT-I8150 (ancora) imports a large set of
+Samsung/Qualcomm CameraParameters extensions (KEY_ISO_MODE, KEY_TOUCH_*,
+ISO_*, VIDEO_HFR_*, get/setTouchIndex*, getPreviewFrameRateMode, ...).
+cm-13.0's frameworks/av carried guarded CAMERA_PARAMETERS_EXTRA_C / _H hooks
+in camera/CameraParameters.cpp and camera/include/camera/CameraParameters.h,
+plus a commented-out default template include/camera/CameraParametersExtra.h
+that device trees override.  Lineage-15.1 dropped the hook in the class
+header.  The cpp-side hook is unnecessary here because our device tree ships
+the whole CameraParameters implementation itself via
+TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY -> libcamera_parameters_ancora
+(see device/samsung/ancora/camera/camera_parameters/).
+
+This patch restores only the header-side hook, guarded, so it is a no-op for
+every other LineageOS 15.1 build; it lets libcamera_parameters_ancora's copy
+of CameraParameters.cpp compile with the Samsung extensions declared inside
+the class (expanded from "CameraParametersExtra.h", which that copy includes
+FIRST, before <camera/CameraParameters.h>).
+
+Apply with:
+    cd frameworks/av && git apply \
+        device/samsung/ancora/patches/frameworks-av-15.1-camera-params-extra.patch
+
+--- a/camera/include/camera/CameraParameters.h
++++ b/camera/include/camera/CameraParameters.h
+@@ -682,7 +682,12 @@
+     static const char LIGHTFX_LOWLIGHT[];
+     // High-dynamic range mode
+     static const char LIGHTFX_HDR[];
+ 
++#ifdef CAMERA_PARAMETERS_EXTRA_H
++CAMERA_PARAMETERS_EXTRA_H
++#endif
++
+     /**
+      * Returns the the supported preview formats as an enum given in graphics.h
+      * corrsponding to the format given in the input string or -1 if no such

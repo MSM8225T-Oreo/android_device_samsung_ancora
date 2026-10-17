@@ -1,0 +1,7 @@
+[
+  {
+    "repository":    "android_hardware_broadcom_libbt",
+    "target_path":   "hardware/broadcom/libbt",
+    "branch":        "lineage-15.1"
+  }
+]

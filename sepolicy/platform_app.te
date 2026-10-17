@@ -1,1 +1,4 @@
+# platform apps (AriesParts-style device settings apps)
+
+# Legacy Adreno 205 EGL opens /dev/kgsl directly
 allow platform_app gpu_device:chr_file rw_file_perms;

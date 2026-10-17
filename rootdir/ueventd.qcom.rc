@@ -1,6 +1,14 @@
+# Samsung Galaxy W (ancora) ueventd permissions
+#
+# Note: /dev/hwbinder is a real node since the kernel registers a second
+# binder device (drivers/staging/android/binder.c). Its context label
+# (hwbinder_device) comes from the platform file_contexts; no entry needed.
+# Note: /dev/pmem_adsp is labelled + permitted through sepolicy
+# (camera_device) for the legacy camera preview pipeline.
+
 /dev/rtc0                 0660   system     system
 /dev/rtc1                 0660   system     system
-/dev/ttyHS0               0660   bluetooth  net_bt_stack
+/dev/ttyHS0               0660   bluetooth  net_bt
 
 # the DIAG device node is world writable/readable.
 /dev/diag                 0666   root       root
@@ -33,8 +41,8 @@
 /dev/video*               0666   system     camera
 /dev/system_bus_freq      0660   system     system
 /dev/cpu_dma_latency      0660   system     system
-/dev/smd2                 0660   bluetooth  net_bt_stack
-/dev/smd3                 0660   bluetooth  net_bt_stack
+/dev/smd2                 0660   bluetooth  net_bt
+/dev/smd3                 0660   bluetooth  net_bt
 /dev/smd4                 0660   system     system
 /dev/smd7                 0640   bluetooth  bluetooth
 /dev/smdcntl*             0640   radio      radio

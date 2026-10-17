@@ -1,7 +1,12 @@
-ctl.rmt                 u:object_r:ctl_rmt_prop:s0
-rild.libpath            u:object_r:system_radio_prop:s0
-rild.libargs            u:object_r:system_radio_prop:s0
-bt.bdaddr_path          u:object_r:bluetooth_prop:s0
-config.low_ram          u:object_r:system_prop:s0
-config.max_starting_bg  u:object_r:system_prop:s0
-sys.fw.bg_apps_limit    u:object_r:system_prop:s0
+# Property contexts for ancora (merged with AOSP contexts, longest prefix wins)
+
+# Samsung remote storage daemon control (rmt_storage <-> init)
+ctl.rmt                u:object_r:ctl_rmt_prop:s0
+
+# Samsung RIL exposes runtime state (ril.bt_macaddr, ril.wifi_macaddr)
+# and the shim proxies gsm.* unsolicited state.
+ril.                   u:object_r:radio_prop:s0
+gsm.                   u:object_r:radio_prop:s0
+
+# rild.libpath/rild.libargs are read at rild startup; unlabeled keys fall
+# back to default_prop which every domain may read.

@@ -1,0 +1,2 @@
+# vibrator HAL (legacy vibrator module uses /sys/class/timed_output)
+allow hal_vibrator_default sysfs:dir_file_class_set { open read write };

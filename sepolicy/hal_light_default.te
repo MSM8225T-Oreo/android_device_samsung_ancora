@@ -1,0 +1,2 @@
+# light HAL (msm7k backlight + button leds under /sys/class/leds)
+allow hal_light_default sysfs:dir_file_class_set { open read write };

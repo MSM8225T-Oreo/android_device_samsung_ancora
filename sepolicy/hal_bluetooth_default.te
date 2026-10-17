@@ -1,0 +1,22 @@
+# Bluetooth HIDL HAL service (android.hardware.bluetooth@1.0-service).
+#
+# On Oreo this service is the process that opens /dev/ttyHS0 (via dlopened
+# libbt-vendor from hardware/broadcom/libbt), downloads the BCM4329 .hcd
+# firmware, drives bluesleep LPM and reads the BD address from
+# ro.bt.bdaddr_path (/data/.bt.info).
+#
+# Everything it needs is granted by core 15.1 policy (system/sepolicy):
+#   - hal_bluetooth: hci_attach_dev + uhid_device chr_file rw (hal_bluetooth.te)
+#   - hal_bluetooth: proc_bluetooth_writable (bluesleep /proc/bluetooth/sleep/*)
+#   - hal_bluetooth: sysfs_bluetooth_writable + r_dir_file(sysfs_type) (rfkill
+#     power node, uart clock)
+#   - hal_bluetooth: r_dir_file(bluetooth_efs_file) (/data/.bt.info, relabeled
+#     in our file_contexts)
+#   - domain: vendor_file read (firmware blob at /system/vendor/firmware)
+#   - domain: hwbinder_device rw (HAL-side binder traffic)
+#   - hal_bluetooth: wakelock, sys_nice, net_admin capabilities
+#
+# DAC side is handled by init.qcom.rc/ueventd.qcom.rc (owner bluetooth,
+# group net_bt; the service rc runs "user bluetooth").
+#
+# Device-specific rules intentionally empty; this file documents why.

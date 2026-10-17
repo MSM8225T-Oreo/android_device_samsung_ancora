@@ -1,0 +1,8 @@
+# sensors HAL (legacy sensors.ancora.so if wrapped by HIDL service)
+# The legacy module also runs in-process from system_server (see system_server.te)
+
+allow hal_sensors_default sensors_device:chr_file rw_file_perms;
+
+# Accelerometer/proximity calibration nodes
+allow hal_sensors_default sysfs_custom:dir search;
+allow hal_sensors_default sysfs_custom:file rw_file_perms;

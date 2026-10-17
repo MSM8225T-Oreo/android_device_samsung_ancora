@@ -1,0 +1,8 @@
+# android.hardware.camera.provider@2.4-service running the legacy msm7x30 HAL
+
+# Legacy camera stacks the msm_camera/gemini/pmem paths
+allow hal_camera_default camera_device:dir r_dir_perms;
+allow hal_camera_default { camera_device video_device }:chr_file rw_file_perms;
+
+# HAL JIT-expands blob code (liboemcamera chains)
+allow hal_camera_default self:process execmem;

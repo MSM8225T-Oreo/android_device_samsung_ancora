@@ -1,3 +1,26 @@
+# Copyright (C) 2012 The CyanogenMod Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Samsung Galaxy W (ancora) USB configuration
+#
+# The kernel uses the legacy android_usb gadget (CONFIG_USB_G_ANDROID=y).
+# Oreo's init.usb.rc selects between the configfs and the legacy gadget
+# path based on the sys.usb.configfs property (set to 0 in init.qcom.rc),
+# so this file carries the full legacy switch table as in cm-13.0, plus
+# the none/adb/accessory handlers and adbd stop/start bookkeeping.
+# Non-PIE, non-Samsung PIDs left untouched on purpose.
+
 on init
     write /sys/class/android_usb/android0/iSerial ${ro.serialno}
     write /sys/class/android_usb/android0/f_rndis/manufacturer Samsung
@@ -9,7 +32,25 @@ on boot
     write /sys/class/android_usb/android0/iProduct ${ro.product.model}
     write /sys/class/android_usb/f_mass_storage/inquiry_string "Samsung"
 
+# Charging only
+on property:sys.usb.config=none
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    setprop sys.usb.state none
+
+# ADB only
+on property:sys.usb.config=adb
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 04e8
+    write /sys/class/android_usb/android0/idProduct 6860
+    write /sys/class/android_usb/android0/functions adb
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+# MTP
 on property:sys.usb.config=mtp
+    stop adbd
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04e8
     write /sys/class/android_usb/android0/idProduct 6860
@@ -26,7 +67,9 @@ on property:sys.usb.config=mtp,adb
     start adbd
     setprop sys.usb.state ${sys.usb.config}
 
+# RNDIS (USB tethering)
 on property:sys.usb.config=rndis
+    stop adbd
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04e8
     write /sys/class/android_usb/android0/idProduct 6863
@@ -45,7 +88,9 @@ on property:sys.usb.config=rndis,adb
     start adbd
     setprop sys.usb.state ${sys.usb.config}
 
+# PTP (PTP photo transfer)
 on property:sys.usb.config=ptp
+    stop adbd
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04e8
     write /sys/class/android_usb/android0/idProduct 6865
@@ -62,6 +107,7 @@ on property:sys.usb.config=ptp,adb
     start adbd
     setprop sys.usb.state ${sys.usb.config}
 
+# Samsung diag / radio log configs kept from stock
 on property:sys.usb.config=rndis,dm
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04e8
@@ -79,7 +125,9 @@ on property:sys.usb.config=rndis,acm,dm
     write /sys/class/android_usb/android0/enable 1
     setprop sys.usb.state ${sys.usb.config}
 
+# Mass storage (legacy UMS tools)
 on property:sys.usb.config=mass_storage
+    stop adbd
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 04e8
     write /sys/class/android_usb/android0/idProduct 685b
@@ -92,6 +140,25 @@ on property:sys.usb.config=mass_storage,adb
     write /sys/class/android_usb/android0/idVendor 04e8
     write /sys/class/android_usb/android0/idProduct 685e
     write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+# Accessory mode (Android Open Accessory)
+on property:sys.usb.config=accessory
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d00
+    write /sys/class/android_usb/android0/functions accessory
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=accessory,adb
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d01
+    write /sys/class/android_usb/android0/functions accessory,adb
     write /sys/class/android_usb/android0/enable 1
     start adbd
     setprop sys.usb.state ${sys.usb.config}

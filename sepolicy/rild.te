@@ -1,19 +1,30 @@
-binder_use(rild)
+# rild: AOSP rild + device/ril/libsecril_shim + Samsung libsec-ril.so
+# (type rild, rild_exec and the HIDL/IRadio plumbing come from platform
+# vendor policy; this file only adds the Samsung blob specifics.)
 
-allow rild self:netlink_socket { create bind read write };
-allow rild self:netlink_route_socket { write };
+# Samsung RIL opens the SMD/PDP multiplexer set
+allow rild radio_device:dir r_dir_perms;
+allow rild radio_device:chr_file rw_file_perms;
 
-# Allow logging diagnostic items
+# /dev/diag logging
 allow rild diagnostic_device:chr_file rw_file_perms;
 
-# XXX label with own type?
-allow rild sysfs:file { read open write getattr };
+# Samsung RIL touches /sys/class/sec/switch/* (vbus, usb select)
+allow rild sysfs:file rw_file_perms;
 
-allow rild proc_net:file write;
-allow rild self:capability dac_override;
+# routing table updates while bringing up data calls
+allow rild proc_net:file { open read write };
+
+# pluggable Samsung vendor bits may dlopen with writable text
 allow rild self:process execmem;
+
+# state files under /data/radio (rildserial bridge)
+allow rild radio_data_file:dir rw_dir_perms;
 allow rild radio_data_file:file rw_file_perms;
-allow rild mediaserver:binder { transfer call };
-allow rild system_prop:property_service set;
-allow rild system_data_file:dir rw_dir_perms;
-allow rild system_data_file:file { create read write };
+
+# property service: ril.* / gsm.* (macaddr passthrough, signal state)
+set_prop(rild, radio_prop)
+set_prop(rild, system_prop)
+
+# blob spawns radish (Samsung SMD bridge daemon)
+domain_trans(rild, bridge_exec, bridge)

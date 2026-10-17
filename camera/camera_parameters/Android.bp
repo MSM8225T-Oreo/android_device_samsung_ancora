@@ -1,0 +1,35 @@
+// Samsung/Qualcomm camera-parameter extensions for GT-I8150 (ancora).
+//
+// Selected by TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY in BoardConfig.mk and
+// whole-linked into libcamera_client by the LineageOS soong plugin
+// (frameworks/av/camera/parameters.go).  When a specific parameters library
+// is set, the framework's generic camera/CameraParameters.cpp is NOT compiled
+// into libcamera_client, so this module must carry the COMPLETE
+// CameraParameters implementation (frozen copy of frameworks/av lineage-15.1)
+// plus all Samsung/QCOM extras injected via CameraParametersExtra.h.
+//
+// The blob-facing Samsung keys/methods resolve out of libcamera_client, which
+// sits in the global lookup group of every process that loads the camera HAL
+// chain, so runtime-dlopen'ed blobs (libcamera.so, liboemcamera.so, ...) bind
+// them without any LD_PRELOAD/shim plumbing.
+cc_library_static {
+    name: "libcamera_parameters_ancora",
+
+    srcs: ["CameraParameters.cpp"],
+
+    local_include_dirs: ["."],
+    include_dirs: [
+        "frameworks/av/camera/include",
+        "system/core/include",
+        "system/core/libutils/include",
+    ],
+
+    shared_libs: [
+        "libutils",
+        "liblog",
+    ],
+
+    cflags: [
+        "-Wno-unused-parameter",
+    ],
+}

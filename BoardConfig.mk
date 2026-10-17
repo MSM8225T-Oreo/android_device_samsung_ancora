@@ -39,14 +39,15 @@ TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a-neon
 TARGET_CPU_VARIANT := scorpion
 TARGET_CPU_ABI := armeabi-v7a
-TARGET_CPU_ABI2 := armeabi
-TARGET_CPU_SMP := false
+# TARGET_CPU_ABI2/TARGET_CPU_SMP were dropped from the Oreo build system
 
 # Enable dex-preoptimization to speed up first boot sequence
+# Only preoptimize the boot classpath: a full preopt kills our fixed
+# 1.16GB system partition and wastes precious RAM at zygote start.
 WITH_DEXPREOPT := true
+WITH_DEXPREOPT_BOOT_IMG_ONLY := true
 
-# Legacy MMAP for pre-lollipop blobs
-BOARD_USES_LEGACY_MMAP := true
+PRODUCT_FULL_TREBLE_OVERRIDE := false
 
 # Kernel
 BOARD_KERNEL_BASE := 0x00400000
@@ -57,10 +58,8 @@ TARGET_KERNEL_CONFIG := ancora_defconfig
 # Build kernel with GCC 4.9
 TARGET_KERNEL_CROSS_COMPILE_PREFIX := arm-linux-androideabi-
 
-# disable block based ota
-BLOCK_BASED_OTA := false
-
 MALLOC_IMPL := dlmalloc
+MALLOC_SVELTE := true
 
 # Wifi related defines
 WIFI_BAND                        := 802_11_ABG
@@ -86,19 +85,21 @@ BOARD_HAL_STATIC_LIBRARIES := libhealthd.msm
 # Bluetooth
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
+# Fluoride buildcfg include (consumed by the soong fluoride plugin for
+# system/bt and by hardware/broadcom/libbt).
 BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/samsung/ancora/bluetooth
-BOARD_BLUEDROID_VENDOR_CONF := device/samsung/ancora/bluetooth/vnd_ancora.txt
+# 15.1 libbt picks include/vnd_$(TARGET_DEVICE).txt from its own tree unless
+# this is set; our conf lives in the device tree.
+BOARD_CUSTOM_BT_CONFIG := device/samsung/ancora/bluetooth/vnd_ancora.txt
 
-# RIL
-COMMON_GLOBAL_CFLAGS += -DDISABLE_ASHMEM_TRACKING
-TARGET_NEEDS_BIONIC_PRELINK_SUPPORT := true
-TARGET_NEEDS_NON_PIE_SUPPORT := true
+# RIL: AOSP rild + libsecril_shim wrapping the Samsung blob (HIDL telephony)
 BOARD_MOBILEDATA_INTERFACE_NAME = "pdp0"
-BOARD_RIL_CLASS := ../../../device/samsung/ancora/ril/
 
 # Audio
 BOARD_USES_LEGACY_ALSA_AUDIO := true
 BOARD_HAVE_SAMSUNG_AUDIO := true
+# Oreo APM: migrate audio_policy.conf -> audio_policy_configuration.xml
+USE_XML_AUDIO_POLICY_CONF := 1
 AUDIO_FEATURE_ENABLED_INCALL_MUSIC := false
 AUDIO_FEATURE_ENABLED_COMPRESS_VOIP := false
 AUDIO_FEATURE_ENABLED_PROXY_DEVICE := false
@@ -106,26 +107,35 @@ AUDIO_FEATURE_ENABLED_PROXY_DEVICE := false
 # Qualcomm
 TARGET_USES_ION := true
 TARGET_USES_C2D_COMPOSITION := true
-TARGET_DISPLAY_INSECURE_MM_HEAP := true
-USE_OPENGL_RENDERER := true
 BOARD_USES_QCOM_HARDWARE := true
+
+# Register the CAF HAL trees with the Lineage pathmap so the guarded root
+# makefiles ($(call project-path-for,qcom-*)) resolve. These paths must
+# match where your local manifest syncs the trees (cm-13 era paths).
+$(call project-set-path,qcom-display,hardware/qcom/display-caf)
+$(call project-set-path,qcom-audio,hardware/qcom/audio-caf)
+$(call project-set-path,qcom-media,hardware/qcom/media-caf)
 
 # Triple FrameBuffer
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 
 # Camera
 USE_DEVICE_SPECIFIC_CAMERA := true
-COMMON_GLOBAL_CFLAGS += -DBINDER_COMPAT
-TARGET_RELEASE_CPPFLAGS += -DNEEDS_VECTORIMPL_SYMBOLS
+# Samsung camera parameter extension hook: whole-links
+# libcamera_parameters_ancora into libcamera_client via the LineageOS soong
+# plugin (frameworks/av/camera/parameters.go).  Requires the frameworks/av
+# patch in patches/frameworks-av-15.1-camera-params-extra.patch to be applied.
+TARGET_SPECIFIC_CAMERA_PARAMETER_LIBRARY := libcamera_parameters_ancora
+# COMMON_GLOBAL_CFLAGS / TARGET_RELEASE_CPPFLAGS were renamed/removed in Oreo
+BOARD_GLOBAL_CFLAGS += -DBINDER_COMPAT
+BOARD_GLOBAL_CFLAGS += -DNEEDS_VECTORIMPL_SYMBOLS
 
 # Light HAL
 TARGET_PROVIDES_LIBLIGHT := true
 
-# Include an expanded selection of fonts
-EXTENDED_FONT_FOOTPRINT := true
-
-# CM Hardware
-BOARD_HARDWARE_CLASS := device/samsung/ancora/cmhw
+# Lineage hardware
+# cmhw -> lineagehw port is a follow-up task; disable for first boot
+#BOARD_HARDWARE_CLASS := device/samsung/ancora/lineagehw
 
 # GPS
 USE_DEVICE_SPECIFIC_GPS := true
@@ -137,6 +147,12 @@ BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1163919360
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1832894464
 BOARD_CACHEIMAGE_PARTITION_SIZE := 560988160
 BOARD_FLASH_BLOCK_SIZE := 131072
+BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
+
+# No vendor partition: all vendor modules (every HIDL HAL binary and the
+# 8.0 generated manifest wiring) must land under /system/vendor. AOSP init
+# links /vendor -> /system/vendor automatically for devices like this.
+TARGET_COPY_OUT_VENDOR := system/vendor
 
 # Misc. filesystem settings
 #BOARD_SYSTEMIMAGE_JOURNAL_SIZE := 0
@@ -144,30 +160,35 @@ TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 TARGET_KERNEL_HAVE_EXFAT := true 
 
-# TWRP recovery
-DEVICE_RESOLUTION := 480x800
+# Recovery (TWRP, Oreo-compatible flag set)
+BOARD_USES_RECOVERY_AS_BOOT := false
+TW_THEME := portrait_hdpi
 TARGET_RECOVERY_DEVICE_DIRS := device/samsung/ancora
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TARGET_RECOVERY_FSTAB := device/samsung/ancora/rootdir/fstab.qcom
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TW_TARGET_USES_QCOM_BSP := true
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_BRIGHTNESS_PATH := /sys/devices/platform/msm_fb.196609/leds/lcd-backlight/brightness
 TW_MAX_BRIGHTNESS := 255
+TW_DEFAULT_BRIGHTNESS := 255
 TW_CUSTOM_POWER_BUTTON := 107
-BOARD_USE_CUSTOM_RECOVERY_FONT:= \"roboto_10x18.h\"
-RECOVERY_SDCARD_ON_DATA := true
-TW_EXTERNAL_STORAGE_PATH := "/external_sd"
-TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
+TW_INCLUDE_CRYPTO := false
 TW_NO_REBOOT_BOOTLOADER := true
 TW_HAS_DOWNLOAD_MODE := true
 TW_USE_MODEL_HARDWARE_ID_FOR_DEVICE_ID := true
 TW_INCLUDE_FB2PNG := true
 TW_NO_CPU_TEMP := true
+TW_NO_HAPTICS := true
+RECOVERY_SDCARD_ON_DATA := true
+TW_INTERNAL_STORAGE_PATH := "/data/media"
+TW_INTERNAL_STORAGE_MOUNT_POINT := "sdcard"
+TW_EXTERNAL_STORAGE_PATH := "/external_sd"
+TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
 
 # Charger
 BOARD_CHARGER_DISABLE_INIT_BLANK := true
 BOARD_CHARGER_ENABLE_SUSPEND := true
 
 # SELinux
-#BOARD_SEPOLICY_DIRS += \
+BOARD_SEPOLICY_DIRS += \
     device/samsung/ancora/sepolicy

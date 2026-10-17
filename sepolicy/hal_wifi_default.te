@@ -1,0 +1,2 @@
+# wifi@1.0 (legacy wrapper) controlling BCM4329 LPM / rfkill
+allow hal_wifi_default rfkill_device:chr_file { open read write };
