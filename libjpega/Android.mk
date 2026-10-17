@@ -17,7 +17,7 @@ LOCAL_SHARED_LIBRARIES:= \
 LOCAL_SRC_FILES:=\
 	jpeg-data.c\
 	jpeg-marker.c\
-	exif-i18n
+	exif-i18n.c
 
 LOCAL_MODULE:= libjpega
 
