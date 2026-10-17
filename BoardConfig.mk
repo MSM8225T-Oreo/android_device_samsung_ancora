@@ -65,7 +65,6 @@ TARGET_KERNEL_CONFIG := ancora_defconfig
 # Build kernel with GCC 4.9
 TARGET_KERNEL_CROSS_COMPILE_PREFIX := arm-linux-androideabi-
 
-MALLOC_IMPL := dlmalloc
 MALLOC_SVELTE := true
 
 # Wifi related defines
