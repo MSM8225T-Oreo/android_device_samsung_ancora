@@ -26,7 +26,14 @@
 
 # inherit from the proprietary version
 
-TARGET_SPECIFIC_HEADER_PATH += device/samsung/ancora/include
+# TARGET_SPECIFIC_HEADER_PATH (framework header override dir) is NOT consumed
+# by lineage-15.1's build anymore (neither build/core nor soong reads it), and
+# the only header that lived in device/samsung/ancora/include has moved:
+#   include/linux/msm_*.h, android_pmem.h etc. -> kernel build via
+#     $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include (dropped in cm-10.2)
+#   include/camera/CameraParametersExtra.h     -> camera/camera_parameters/
+# Hence no include/ dir is needed; do not re-add this variable.
+# TARGET_SPECIFIC_HEADER_PATH += device/samsung/ancora/include
 
 # Platform
 TARGET_BOARD_PLATFORM := msm7x30

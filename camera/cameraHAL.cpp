@@ -35,6 +35,12 @@
 
 #include <cutils/log.h>
 #include "Overlay.h"
+// Samsung/Qualcomm CameraParameters extensions. This header self-defines the
+// CAMERA_PARAMETERS_EXTRA_{C,H} macros; including it BEFORE
+// <camera/CameraParameters.h> makes the guarded hook in that (patched)
+// framework header expand the Samsung key/method declarations into the class
+// body — same pattern as camera/camera_parameters/CameraParameters.cpp uses.
+#include "CameraParametersExtra.h"
 #include <camera/CameraParameters.h>
 #include <hardware/camera.h>
 #include <binder/IMemory.h>

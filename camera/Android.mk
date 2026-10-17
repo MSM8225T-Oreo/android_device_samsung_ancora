@@ -10,10 +10,18 @@ LOCAL_SRC_FILES := \
     Overlay.cpp
 
 
-LOCAL_C_INCLUDES := $(TOP)/frameworks/native/include
-
-LOCAL_C_INCLUDES += $(call project-path-for,qcom-display)/libgralloc \
-                    system/media/camera/include
+# Header homes on lineage-15.1: frameworks/native/include was pruned in Oreo
+# (binder -> libs/binder/include, ui -> libs/ui/include) and system/media no
+# longer carries camera HAL headers; CameraParameters lives in frameworks/av.
+# camera_parameters/ supplies CameraParametersExtra.h for the Samsung extras.
+LOCAL_C_INCLUDES := $(TOP)/frameworks/av/camera/include \
+    $(TOP)/frameworks/native/libs/binder/include \
+    $(TOP)/frameworks/native/libs/ui/include \
+    system/core/libutils/include \
+    system/core/libcutils/include \
+    hardware/libhardware/include \
+    $(call project-path-for,qcom-display)/libgralloc \
+    $(LOCAL_PATH)/camera_parameters
 
 LOCAL_MODULE_TAGS := optional
 

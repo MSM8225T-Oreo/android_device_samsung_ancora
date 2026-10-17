@@ -56,7 +56,10 @@ echo "build root : $BUILD_ROOT"
 
 # --- git apply wrapper: skips already-applied patches -----------------------
 apply() { # $1 repo-relative dir, $2 patch file, $3 label
-  local rel="$1" patch="$2" label="$3" repo="$BUILD_ROOT/$rel"
+  local rel="$1"
+  local patch="$2"
+  local label="$3"
+  local repo="$BUILD_ROOT/$rel"
   if [ ! -d "$repo" ]; then
     echo "  [SKIP] $label — '$rel' not present in this tree" >&2
     return 0
